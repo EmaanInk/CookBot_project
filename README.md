@@ -1,4 +1,6 @@
-🍳 CookBot
+#🍳 CookBot
+
+
 An AI-powered cooking assistant built with Groq's LLaMA model and Streamlit. Ask it anything about cooking, get real-time streaming responses, and find out what meals you can make with whatever's in your fridge.
 
 Features
