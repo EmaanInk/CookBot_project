@@ -147,4 +147,5 @@ if prompt := st.chat_input("Ask CookBot anything..."):
             chunk.choices[0].delta.content or ""
             for chunk in stream_cookbot(st.session_state.history)
         )
-
+    st.session_state.history.append({"role": "assistant", "content": response})
+    st.rerun()
