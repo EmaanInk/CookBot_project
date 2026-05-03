@@ -42,7 +42,7 @@ st.markdown("""
     }
     .stButton > button:hover { background-color: #ff2277 !important; }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=False)
 
 if "history" not in st.session_state:
     st.session_state.history = []
