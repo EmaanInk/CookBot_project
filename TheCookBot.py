@@ -47,6 +47,11 @@ st.markdown("""
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# NEW — stores only the messages the user chose to save
+# starts as empty list, gets filled when user checks the checkbox
+if "saved_messages" not in st.session_state:
+    st.session_state.saved_messages = []
+
 def stream_cookbot(history):
     return client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -74,7 +79,7 @@ Format your response with meal names as headers."""
         stream=True
     )
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# ── Sidebar ──
 with st.sidebar:
     st.markdown("## 🍳 CookBot")
     st.markdown("Your AI cooking assistant.")
@@ -101,41 +106,90 @@ with st.sidebar:
 
     st.divider()
 
-    # ── Download button — works on phone and desktop ───────────────────────────
+    # ── Save Recipes ──
     st.markdown("### 💾 Save Recipes")
-    if st.session_state.history:
-        output = "=== CookBot Recipe Session ===\n"
+
+    # NEW — shows how many responses the user has selected to save
+    # len() counts how many items are in the saved_messages list
+    if st.session_state.saved_messages:
+        st.caption(f"{len(st.session_state.saved_messages)} response(s) selected to save")
+
+        # builds the download text from ONLY the saved messages
+        # not the entire history like before
+        output = "=== CookBot Saved Recipes ===\n"
         output += f"Saved: {datetime.now().strftime('%B %d, %Y %I:%M %p')}\n"
         output += "=" * 30 + "\n\n"
-        for msg in st.session_state.history:
+
+        # loops through only the messages the user chose
+        for msg in st.session_state.saved_messages:
             if msg["role"] == "user":
                 output += f"YOU: {msg['content']}\n\n"
             elif msg["role"] == "assistant":
                 output += f"COOKBOT: {msg['content']}\n\n"
                 output += "-" * 30 + "\n\n"
+
         st.download_button(
-            label="⬇️ Download recipes",
+            label="⬇️ Download selected recipes",
             data=output,
             file_name=f"cookbot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
             mime="text/plain"
         )
+
+        # NEW — lets user clear their selections without clearing the chat
+        if st.button("Clear selections"):
+            st.session_state.saved_messages = []
+            st.rerun()
+
     else:
-        st.caption("Chat first, then save!")
+        # shown when nothing is selected yet
+        st.caption("Check the boxes next to responses you want to save!")
 
     st.divider()
 
     if st.button("🗑️ Clear chat"):
         st.session_state.history = []
+        # NEW — also clears saved messages when chat is cleared
+        # no point keeping saved messages if the chat is gone
+        st.session_state.saved_messages = []
         st.rerun()
 
-# ── Main chat area ─────────────────────────────────────────────────────────────
+# ── Main chat area ──
 st.markdown("## 🍳 CookBot")
 st.caption("Ask me anything about cooking, recipes, or techniques.")
+
+# NEW — small instruction so user knows about the save feature
+st.caption("💡 Check the box next to any response to save it")
 st.divider()
 
-for msg in st.session_state.history:
+for i, msg in enumerate(st.session_state.history):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+
+        # NEW — only show checkbox on assistant messages not user messages
+        # user questions don't need to be saved, only the recipes/responses
+        if msg["role"] == "assistant":
+
+            # unique key for each checkbox using the index
+            # without unique keys streamlit gets confused which checkbox is which
+            checkbox_key = f"save_{i}"
+
+            # checks if this message is already in saved_messages
+            # so the checkbox stays checked after a rerun
+            already_saved = msg in st.session_state.saved_messages
+
+            # st.checkbox returns True if checked, False if not
+            # value=already_saved makes it stay checked after rerun
+            save_this = st.checkbox("💾 Save this recipe", key=checkbox_key, value=already_saved)
+
+            # if user just checked it and it's not already saved — add it
+            if save_this and not already_saved:
+                st.session_state.saved_messages.append(msg)
+                st.rerun()
+
+            # if user just unchecked it and it was saved — remove it
+            if not save_this and already_saved:
+                st.session_state.saved_messages.remove(msg)
+                st.rerun()
 
 if prompt := st.chat_input("Ask CookBot anything..."):
     with st.chat_message("user"):
