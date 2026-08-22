@@ -54,7 +54,7 @@ if "saved_messages" not in st.session_state:
 
 def stream_cookbot(history):
     return client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[
             {"role": "system", "content": "You're a helpful cooking assistant. Only answer cooking related questions."},
             *history
